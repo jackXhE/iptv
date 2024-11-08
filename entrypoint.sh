@@ -1,7 +1,15 @@
 #!/bin/bash
 
-pipenv run python $APP_WORKDIR/main.py scheduled_task 2>&1 | tee -a /var/log/tv.log
+for file in /tv_config/*; do
+  filename=$(basename "$file")
+  target_file="$APP_WORKDIR/config/$filename"
+  if [ ! -e "$target_file" ]; then
+    cp -r "$file" "$target_file"
+  fi
+done
 
-cron
+service cron start
 
-tail -f /var/log/tv.log
+pipenv run python $APP_WORKDIR/main.py
+
+gunicorn -w 4 -b 0.0.0.0:8000 main:app
